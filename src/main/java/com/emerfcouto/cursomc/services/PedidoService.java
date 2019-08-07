@@ -3,8 +3,12 @@ package com.emerfcouto.cursomc.services;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
+import com.emerfcouto.cursomc.domain.Cliente;
 import com.emerfcouto.cursomc.domain.ItemPedido;
 import com.emerfcouto.cursomc.domain.PagamentoComBoleto;
 import com.emerfcouto.cursomc.domain.Pedido;
@@ -14,6 +18,8 @@ import com.emerfcouto.cursomc.repositories.ItemPedidoRepository;
 import com.emerfcouto.cursomc.repositories.PagamentoRepository;
 import com.emerfcouto.cursomc.repositories.PedidoRepository;
 import com.emerfcouto.cursomc.repositories.ProdutoRepository;
+import com.emerfcouto.cursomc.secutiry.UserSS;
+import com.emerfcouto.cursomc.services.exceptions.AuthorizationException;
 import com.emerfcouto.cursomc.services.exceptions.ObjectNotFoundException;
 
 @Service
@@ -82,5 +88,21 @@ public class PedidoService {
 		emailService.sendOrderConfirmationHtmlEmail(obj);
 		
 		return obj;
+	}
+	
+	public Page<Pedido> findPage(Integer page, Integer linesPerPage, String orderBy, String direction) {
+		
+		UserSS user = UserService.authenticated();
+		
+		if(user == null) {
+			
+			throw new AuthorizationException("Acesso negado");
+		}
+		
+		PageRequest pageRequest = new PageRequest(page, linesPerPage, Direction.valueOf(direction), orderBy);
+
+		Cliente cli = clienteRepository.findOne(user.getId());
+		
+		return repo.findByCliente(cli, pageRequest);
 	}
 }
